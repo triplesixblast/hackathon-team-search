@@ -1,0 +1,85 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hackathon-team-search-db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-itam}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}
+      - POSTGRES_DB=${POSTGRES_DB:-itam_hack}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: &backend-build
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: hackathon-team-search-backend
+    ports:
+      # Только localhost: снаружи API доступен через frontend/nginx. Иначе X-Forwarded-For
+      # можно подделывать и обходить лимит попыток входа.
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Переменные берутся из .env в корне проекта (cp env.example .env)
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-itam}:${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}@db:5432/${POSTGRES_DB:-itam_hack}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?Задайте TELEGRAM_BOT_TOKEN в .env}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-}
+      - SECRET_KEY=${SECRET_KEY:?Задайте SECRET_KEY в .env}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:?Задайте ADMIN_EMAIL в .env}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Задайте ADMIN_PASSWORD в .env}
+      - CODE_EXPIRY_MINUTES=${CODE_EXPIRY_MINUTES:-10}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://localhost:3000,http://localhost:5173}
+      # nginx из frontend — единственный прокси перед API
+      - TRUSTED_PROXY_HOPS=${TRUSTED_PROXY_HOPS:-1}
+      - ENABLE_DOCS=${ENABLE_DOCS:-false}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: hackathon-team-search-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  telegram-bot:
+    build: *backend-build
+    container_name: hackathon-team-search-telegram-bot
+    command: ["python", "-m", "app.bot"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - BACKEND_URL=http://backend:8000
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - CODE_EXPIRY_MINUTES=${CODE_EXPIRY_MINUTES:-10}
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

@@ -1,0 +1,361 @@
+/* ITAM Hack — дизайн-система «Midnight Lime»
+   Плоские тёмные поверхности с тонкими линиями, кислотно-лаймовый акцент,
+   крупные заголовки Unbounded. Стекло (liquid glass) используется только
+   для плавающих элементов: мобильной навигации, тостов и диалогов. */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: dark;
+  --font-display: 'Unbounded', 'Onest', system-ui, sans-serif;
+  --font-body: 'Onest', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* палитра (тёмная — основная) */
+  --ink: 255 255 255;            /* rgb-компоненты цвета линий и подложек */
+  --shade: 0 0 0;                /* rgb-компоненты цвета теней */
+  --bg-main: #09090c;
+  --text: #f4f4ef;
+  --muted: #8e8e9b;
+  --accent: #c8ff3a;
+  --accent-rgb: 200 255 58;
+  --accent-2: #ff6b3d;
+  --accent-3: #3ddc97;
+  --ok-rgb: 61 220 151;
+  --danger: #ff5a4d;
+  --danger-rgb: 255 90 77;
+  --on-accent: #0b0b0d;
+  --grad: var(--accent);
+
+  /* поверхности: плоские, без размытия */
+  --glass: #121217;
+  --glass-strong: #1a1a22;
+  --border: rgba(255, 255, 255, 0.09);
+  --hairline: rgb(var(--ink) / 0.1);
+  --glass-hl: rgba(255, 255, 255, 0.04);
+
+  /* стекло для плавающих элементов */
+  --float-bg: rgba(26, 26, 34, 0.55);
+  --menu-bg: #1d1d27;
+  --lens-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
+  --nav-base: rgba(20, 20, 28, 0.4);
+  --nav-ink: rgba(244, 244, 239, 0.62);
+  --nav-ink-active: var(--accent);
+
+  --radius-lg: 18px;
+  --radius-sm: 12px;
+  --shadow-strong: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 28px rgba(0, 0, 0, 0.35);
+  --blur-strong: 22px;
+  --blur-soft: 0px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --ink: 17 17 17;
+    --shade: 40 40 20;
+    --bg-main: #f2f0e8;
+    --text: #111111;
+    --muted: #6a6a64;
+    --accent: #3f7d00;
+    --accent-rgb: 63 125 0;
+    --accent-2: #e8501f;
+    --accent-3: #12804f;
+    --ok-rgb: 18 128 79;
+    --danger: #d6372b;
+    --danger-rgb: 214 55 43;
+    --on-accent: #ffffff;
+
+    --glass: #ffffff;
+    --glass-strong: #f6f4ec;
+    --border: rgba(17, 17, 17, 0.1);
+    --glass-hl: rgba(255, 255, 255, 0);
+
+    --float-bg: rgba(255, 255, 255, 0.6);
+    --menu-bg: #ffffff;
+    --lens-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35));
+    --nav-base: rgba(255, 255, 255, 0.45);
+    --nav-ink: rgba(17, 17, 17, 0.6);
+    --nav-ink-active: #111111;
+
+    --shadow-strong: 0 24px 60px rgba(40, 40, 20, 0.22);
+    --shadow-soft: 0 1px 2px rgba(40, 40, 20, 0.06), 0 8px 24px rgba(40, 40, 20, 0.07);
+  }
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  overflow-x: hidden;
+  position: relative;
+  background-color: var(--bg-main);
+  /* точечная сетка и мягкое лаймовое свечение сверху */
+  background-image:
+    radial-gradient(60rem 28rem at 50% -8%, rgb(var(--accent-rgb) / 0.12), transparent 65%),
+    radial-gradient(rgb(var(--ink) / 0.07) 1px, transparent 1px);
+  background-size: auto, 26px 26px;
+  background-attachment: fixed;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+h1 { font-size: clamp(1.5rem, 5vw, 2.2rem); }
+h2 { font-size: clamp(1.2rem, 3.5vw, 1.5rem); }
+h3 { font-size: 1.05rem; }
+
+a {
+  color: var(--accent);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Поверхности: плоские карточки с тонкой линией */
+.glass-panel {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-lg);
+  position: relative;
+  /* не обрезаем содержимое: иначе выпадающие меню внутри панели прячутся за рамкой */
+  overflow: visible;
+}
+
+.glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.floating {
+  animation: none;
+}
+
+.glow-accent {
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.4), 0 10px 30px rgb(var(--accent-rgb) / 0.15);
+}
+
+/* Кнопки: прямоугольные, лаймовые, со смещённой тенью при наведении */
+button:not([class*="router"]),
+.btn,
+.btn-primary,
+.btn-ghost,
+.btn-view,
+.auth-button,
+a.btn,
+a.btn-primary,
+a.btn-ghost,
+a.btn-view,
+a.auth-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1.3rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  text-decoration: none;
+  line-height: 1.15;
+  min-height: 44px;
+}
+
+.btn-primary,
+.btn-view,
+.auth-button,
+button:not([class*="router"]),
+input[type="submit"],
+input[type="button"] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid rgb(var(--ink) / 0.22);
+  box-shadow: none;
+}
+
+.btn:hover,
+.btn-primary:hover,
+.btn-ghost:hover,
+.btn-view:hover,
+.auth-button:hover,
+button:not([class*="router"]):hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 3px 3px 0 rgb(var(--accent-rgb) / 0.45);
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 rgb(var(--ink) / 0.15);
+}
+
+.btn:active,
+.btn-primary:active,
+.btn-ghost:active,
+.btn-view:active,
+.auth-button:active,
+button:not([class*="router"]):active {
+  transform: translate(0, 0);
+  box-shadow: none;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Статусы: моноширинные пилюли с цветной точкой */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.75rem 0.28rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--hairline);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.status.upcoming {
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--accent);
+  border-color: rgb(var(--accent-rgb) / 0.35);
+}
+
+.status.active {
+  background: rgb(var(--ok-rgb) / 0.15);
+  color: var(--accent-3);
+  border-color: rgb(var(--ok-rgb) / 0.35);
+}
+
+.status.finished {
+  background: rgb(var(--ink) / 0.06);
+  color: var(--muted);
+}
+
+/* Сетки */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Поля ввода */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+select,
+textarea {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--glass-strong);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.25);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
